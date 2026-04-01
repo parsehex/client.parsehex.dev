@@ -19,7 +19,6 @@
   })
 
   onMounted(() => {
-
     document.addEventListener('keydown', function(event) {
       if (event.ctrlKey && event.key === '/') {
         isSearchOpen.value = !isSearchOpen.value
@@ -28,20 +27,24 @@
   })
 
   const linksTopNav = reactive([{
-    label: 'Dashboard',
-    icon: 'i-lucide-home',
+    label: 'Overview',
+    icon: 'i-lucide-activity',
     exact: true,
     exactQuery: true,
     exactMatch: true,
-    to: '/dashboard'
+    to: '/admin'
   },{
-    label: 'Projects',
-    icon: 'i-lucide-folder',
-    to: '/dashboard/projects'
+    label: 'All Projects',
+    icon: 'i-lucide-folder-kanban',
+    to: '/admin/projects'
   }, {
-    label: 'Files',
-    icon: 'i-lucide-files',
-    to: '/dashboard/files'
+    label: 'Clients',
+    icon: 'i-lucide-building-2',
+    to: '/admin/clients'
+  }, {
+    label: 'System Users',
+    icon: 'i-lucide-user-cog',
+    to: '/admin/users'
   }])
 
   const linksBottomNav = [{
@@ -50,6 +53,10 @@
     click: () => {
       isSearchOpen.value = true
     }
+  }, {
+    label: 'Exit Admin',
+    icon: 'i-lucide-log-out',
+    to: '/dashboard'
   }]
 
   const signOut = async() => {
@@ -77,17 +84,19 @@
     ></div>
 
     <div class="h-full w-64 px-2 overflow-auto border-r border-gray-200 dark:border-stone-800 md:sticky top-0
-    fixed z-50 bg-white dark:bg-stone-950 md:bg-transparent"
+    fixed z-50 bg-stone-50 dark:bg-stone-950 md:bg-stone-50"
     id="menu-admin-top"
     v-if="menuOpen"
     >
-      <div class="py-2 flex flex-col justify-between h-[100vh] bg-background">
+      <div class="py-2 flex flex-col justify-between h-[100vh]">
         <div class="flex flex-col gap-3">
-          <NuxtLink to="/dashboard">
-            <div class="flex items-center justify-start gap-4 p-2">
-              <img src="/favicon.png" class="h-8 w-8 rounded">
-              <p class="text-xl font-bold tracking-tight">
-                Client Portal
+          <NuxtLink to="/admin">
+            <div class="flex items-center justify-start gap-3 p-2">
+              <div class="h-8 w-8 bg-red-600 rounded flex items-center justify-center text-white">
+                <UIcon name="i-lucide-shield-alert" class="w-5 h-5"/>
+              </div>
+              <p class="text-xl font-bold tracking-tight text-red-600">
+                Admin Area
               </p>
             </div>
           </NuxtLink>
@@ -95,7 +104,7 @@
           <UVerticalNavigation
           :links="linksTopNav">
           <template #default="{ link, isActive }">
-            <span class="group-hover:text-primary relative py-2">{{ link.label }}</span>
+            <span class="group-hover:text-primary relative py-2 font-medium">{{ link.label }}</span>
           </template>
           </UVerticalNavigation>
         </div>
@@ -104,21 +113,21 @@
           <UVerticalNavigation
           :links="linksBottomNav">
           <template #default="{ link }">
-            <span class="group-hover:text-primary relative py-2">
+            <span class="group-hover:text-primary relative py-2 font-medium">
               {{ link.label }}
               <UKbd value="ctrl + /" v-if="link.label == 'Search'" class="ml-2" />
             </span>
           </template>
           </UVerticalNavigation>
 
-          <div class="flex items-center justify-between p-3">
+          <div class="flex items-center justify-between p-3 mt-2 border-t border-gray-200 dark:border-gray-800">
             <div class="flex items-center gap-2">
               <UAvatar
               size="sm"
               :alt="auth?.email"
               :src="auth?.user_metadata.avatar_url ?? null"
               />
-              <p class="text-gray-400 font-bold text-sm" v-if="auth?.email">{{auth.email.length > 12 ? auth.email.slice(0, 12) + '...' : auth.email}}</p>
+              <p class="text-gray-500 font-bold text-sm" v-if="auth?.email">{{auth.email.length > 12 ? auth.email.slice(0, 12) + '...' : auth.email}}</p>
             </div>
             <UButton color="red" variant="ghost" icon="i-lucide-log-out"
             @click="signOut">

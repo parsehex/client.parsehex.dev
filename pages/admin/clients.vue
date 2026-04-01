@@ -1,7 +1,12 @@
 <script setup lang="ts">
   import type { Database } from '~/supabase/database.types';
 
-  const { isSystemAdmin } = useProfile()
+  definePageMeta({
+    layout: 'admin',
+    middleware: 'admin'
+  })
+
+  // We don't need isSystemAdmin check in template anymore because middleware protects it
   const supabase = useSupabaseClient<Database>()
   const { errorHandler } = useErrorHandler()
 
@@ -66,7 +71,7 @@
 </script>
 
 <template>
-  <div class="h-full flex flex-col pt-5" v-if="isSystemAdmin">
+  <div class="h-full flex flex-col pt-5">
     <div class="flex items-center justify-between px-2 py-4">
       <div>
         <h1 class="text-2xl font-bold">Clients</h1>
@@ -107,11 +112,5 @@
         </form>
       </UCard>
     </UModal>
-  </div>
-  <div v-else class="flex h-full items-center justify-center p-10">
-    <UCard>
-        <p class="text-xl font-bold text-center mb-2">Access Denied</p>
-        <p class="text-sm text-gray-500">You do not have permission to view Clients.</p>
-    </UCard>
   </div>
 </template>
