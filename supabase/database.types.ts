@@ -158,6 +158,7 @@ export type Database = {
       }
       update_comments: {
         Row: {
+          action_type: string | null
           author_id: string
           content: string
           created_at: string | null
@@ -165,6 +166,7 @@ export type Database = {
           update_id: string
         }
         Insert: {
+          action_type?: string | null
           author_id: string
           content: string
           created_at?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           update_id: string
         }
         Update: {
+          action_type?: string | null
           author_id?: string
           content?: string
           created_at?: string | null

@@ -106,10 +106,21 @@
             .from('project_updates')
             .update(updateData)
             .eq('id', feedbackForm.activeUpdateId)
-
         if (updateError) throw updateError
 
-        // 2. Clear and refresh
+        // 2. Insert comment to log the action
+        const { error: commentError } = await supabase
+            .from('update_comments')
+            .insert({
+                update_id: feedbackForm.activeUpdateId as string,
+                author_id: user.value.id as string,
+                content: feedbackForm.comment,
+                action_type: feedbackForm.actionType
+            } as any)
+
+        if (commentError) throw commentError
+
+        // 3. Clear and refresh
         feedbackForm.comment = ''
         feedbackForm.activeUpdateId = null
         feedbackForm.actionType = null
@@ -204,15 +215,6 @@
                                     </div>
                                     <span class="text-xs text-primary font-medium mt-0.5 block">{{ update.created_at ? new Date(update.created_at).toLocaleString() : 'Unknown Date' }}</span>
 
-                                    <!-- Official Record Box (The status note) -->
-                                    <div v-if="update.client_feedback" class="mt-3 p-3 rounded-lg border text-sm" :class="update.status === 'rejected' ? 'bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900 text-red-700 dark:text-red-400' : update.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400' : 'bg-blue-50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-400'">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <UIcon :name="update.status === 'approved' ? 'i-lucide-check-circle' : update.status === 'rejected' ? 'i-lucide-x-circle' : 'i-lucide-help-circle'" class="w-4 h-4" />
-                                            <span class="font-bold uppercase tracking-wider text-[10px]">Official {{ update.status === 'pending' ? 'Feedback' : update.status }} note</span>
-                                        </div>
-                                        <p>{{ update.client_feedback }}</p>
-                                    </div>
-
                                     <p class="mt-3 text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line border-b border-gray-100 dark:border-gray-800 pb-4">
                                         {{ update.description }}
                                     </p>
@@ -223,12 +225,17 @@
                                         <!-- Message history -->
                                         <div v-if="update.comments && update.comments.length > 0" class="space-y-3">
                                             <div v-for="comment in update.comments" :key="comment.id" class="flex gap-3 text-xs">
-                                                <div class="flex-1 bg-gray-50 dark:bg-gray-900/50 p-2 rounded border border-gray-100 dark:border-gray-800">
-                                                    <div class="flex items-center justify-between mb-1">
-                                                        <span class="font-bold text-gray-700 dark:text-gray-300">{{ comment.author?.full_name || 'System' }}</span>
+                                                <div class="flex-1 p-3 rounded-lg border" :class="{ 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/30': comment.action_type === 'approved', 'border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30': comment.action_type === 'rejected', 'border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30': comment.action_type === 'follow_up', 'border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/30': comment.action_type === 'resubmit', 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50': !comment.action_type }">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-bold text-gray-800 dark:text-gray-200">{{ comment.author?.full_name || 'System' }}</span>
+                                                            <UBadge v-if="comment.action_type" size="xs" variant="subtle" :color="comment.action_type === 'approved' ? 'emerald' : comment.action_type === 'rejected' ? 'red' : comment.action_type === 'follow_up' ? 'blue' : 'orange'">
+                                                                {{ comment.action_type.toUpperCase().replace('_', ' ') }}
+                                                            </UBadge>
+                                                        </div>
                                                         <span class="text-[10px] text-gray-400">{{ new Date(comment.created_at).toLocaleString() }}</span>
                                                     </div>
-                                                    <p class="dark:text-gray-400 whitespace-pre-wrap">{{ comment.content }}</p>
+                                                    <p class="text-sm dark:text-gray-300 whitespace-pre-wrap">{{ comment.content }}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -290,8 +297,8 @@
                                             </div>
                                         </div>
 
-                                        <!-- General Reply (When not pending but requires approval) -->
-                                        <div v-else-if="update.requires_approval" class="pt-2">
+                                        <!-- General Reply (For any update without pending actions) -->
+                                        <div v-else class="pt-2">
                                             <div class="flex gap-2">
                                                 <UInput 
                                                     v-model="feedbackForm.comment" 

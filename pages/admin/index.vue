@@ -37,7 +37,7 @@
       // 2. Fetch updates that need attention (Follow-ups)
       const { data: attentionData, error: attentionError } = await supabase
         .from('project_updates')
-        .select('*, projects(name, clients(name))')
+        .select('*, projects(name, clients(name)), comments:update_comments(content, action_type, created_at)')
         .eq('status', 'follow_up')
         .order('created_at', { ascending: false })
 
@@ -50,7 +50,8 @@
         .select(`
           *,
           projects(name, clients(name)),
-          approved_by_user:users!project_updates_approved_by_fkey(full_name)
+          approved_by_user:users!project_updates_approved_by_fkey(full_name),
+          comments:update_comments(content, action_type, created_at)
         `)
         .eq('requires_approval', true)
         .neq('status', 'pending')
@@ -77,6 +78,19 @@
       default: return 'primary'
     }
   }
+
+  const latestActionContent = (item: any) => {
+    if (item.comments && item.comments.length > 0) {
+      const actionComments = item.comments.filter((c: any) => c.action_type)
+      if (actionComments.length > 0) {
+        actionComments.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        return actionComments[0].content
+      }
+    }
+    return item.client_feedback
+  }
+
+
 
   onMounted(() => {
     fetchData()
@@ -117,8 +131,8 @@
                   <UBadge color="blue" variant="subtle" size="xs">QUESTION</UBadge>
                 </div>
                 <p class="text-sm font-bold text-gray-900 dark:text-white truncate">{{ item.title }}</p>
-                <div v-if="item.client_feedback" class="mt-2 text-[11px] p-2 bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800 line-clamp-2">
-                  "{{ item.client_feedback }}"
+                <div v-if="latestActionContent(item)" class="mt-2 text-[11px] p-2 bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800 line-clamp-2">
+                  "{{ latestActionContent(item) }}"
                 </div>
                 <p v-else class="text-xs text-gray-500 mt-1 italic">Waiting for your response...</p>
                 <div class="mt-3">
@@ -184,15 +198,15 @@
                   />
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium">
-                      <span class="font-bold">{{ activity.approved_by_user?.full_name || 'Client' }}</span>
+                      <span class="font-bold">{{ activity.approved_by_user?.full_name || 'System' }}</span>
                       <span class="text-gray-500"> {{ activity.status }} </span>
                       <span class="font-bold">"{{ activity.title }}"</span>
                     </p>
                     <p class="text-xs text-gray-400">
                       {{ activity.projects?.clients?.name }} • {{ activity.projects?.name }}
                     </p>
-                    <p v-if="activity.client_feedback" class="mt-2 text-xs p-2 rounded" :class="activity.status === 'rejected' ? 'text-red-500 bg-red-50 dark:bg-red-950' : activity.status === 'approved' ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950' : 'text-blue-500 bg-blue-50 dark:bg-blue-950'">
-                      "{{ activity.client_feedback }}"
+                    <p v-if="latestActionContent(activity)" class="mt-2 text-xs p-2 rounded" :class="activity.status === 'rejected' ? 'text-red-500 bg-red-50 dark:bg-red-950' : activity.status === 'approved' ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950' : 'text-blue-500 bg-blue-50 dark:bg-blue-950'">
+                      "{{ latestActionContent(activity) }}"
                     </p>
                   </div>
                 </div>
