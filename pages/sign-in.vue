@@ -102,32 +102,32 @@
                 <UFormGroup label="Password" name="password">
                   <UInput v-model="form.password" type="password" />
                 </UFormGroup>
-                <div class="flex items-center gap-1 justify-start mt-3 text-xs">
+                <!-- <div class="flex items-center gap-1 justify-start mt-3 text-xs">
                   <p class="opacity-50">Forgot your password?</p>
                   <NuxtLink to="/forgot-password" class="underline">click here</NuxtLink>
-                </div>
+                </div> -->
 
                 <UButton
                 :loading="isLoading"
                 :disabled="isLoading"
                 type="submit" label="Login" color="gray" block />
               </div>
-              <UDivider label="or" color="gray" orientation="vertical" />
+              <!-- <UDivider label="or" color="gray" orientation="vertical" /> -->
 
-              <div class="space-y-4 flex flex-col justify-center">
+              <!-- <div class="space-y-4 flex flex-col justify-center">
                 <UButton
                 @click="signInWithProvider('GITHUB')"
                 :disabled="isLoading"
                 color="black" label="Continue with GitHub"
                 icon="i-lucide-github" block />
-              </div>
+              </div> -->
             </UForm>
           </UCard>
 
-          <div class="flex items-center gap-2 justify-center mt-3">
+          <!-- <div class="flex items-center gap-2 justify-center mt-3">
             <p class="opacity-50">Don't have an account?</p>
             <NuxtLink to="/sign-up" class="underline">Sign up</NuxtLink>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>

@@ -110,15 +110,15 @@
                 :disabled="isLoading"
                 type="submit" label="Register" color="gray" block />
               </div>
-              <UDivider label="or" color="gray" orientation="vertical" />
+              <!-- <UDivider label="or" color="gray" orientation="vertical" /> -->
 
-              <div class="space-y-4 flex flex-col justify-center">
+              <!-- <div class="space-y-4 flex flex-col justify-center">
                 <UButton
                 @click="signUpWithProvider('GITHUB')"
                 :disabled="isLoading"
                 color="black" label="Continue with GitHub"
                 icon="i-lucide-github" block />
-              </div>
+              </div> -->
             </UForm>
           </UCard>
 
