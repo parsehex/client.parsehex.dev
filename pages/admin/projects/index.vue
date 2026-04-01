@@ -1,0 +1,152 @@
+<script setup lang="ts">
+  import type { Database } from '~/supabase/database.types';
+
+  definePageMeta({
+    layout: 'admin',
+    middleware: 'admin'
+  })
+
+  const supabase = useSupabaseClient<Database>()
+  const { errorHandler } = useErrorHandler()
+
+  const isCreateOpen = ref(false)
+  const isCreating = ref(false)
+  
+  const form = reactive({
+    name: '',
+    client_id: undefined
+  })
+
+  // Table Data
+  const columns = [{
+    key: 'name',
+    label: 'Project Name'
+  }, {
+    key: 'client_id',
+    label: 'Client'
+  }, {
+    key: 'created_at',
+    label: 'Created Date'
+  }, {
+    key: 'actions',
+    label: 'Actions'
+  }]
+
+  const projects = ref<any[]>([])
+  const clients = ref<Database['public']['Tables']['clients']['Row'][]>([])
+  const isLoading = ref(true)
+
+  const fetchProjectsAndClients = async () => {
+    isLoading.value = true
+    
+    // We fetch projects and join with clients to get the client name
+    const { data: projectData, error: projectError } = await supabase
+      .from('projects')
+      .select('*, clients(name)')
+      .order('created_at', { ascending: false })
+      
+    if (projectData) projects.value = projectData
+
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('*')
+
+    if (clientData) clients.value = clientData
+
+    isLoading.value = false
+  }
+
+  const createProject = async () => {
+    try {
+      isCreating.value = true
+      
+      if (!form.client_id) {
+          throw new Error('Please select a client.')
+      }
+
+      const { error } = await supabase
+        .from('projects')
+        .insert({
+            name: form.name,
+            client_id: form.client_id
+        })
+
+      if (error) throw error
+
+      form.name = ''
+      form.client_id = undefined
+      isCreateOpen.value = false
+      await fetchProjectsAndClients()
+    } catch (e: any) {
+        errorHandler(e)
+    } finally {
+        isCreating.value = false
+    }
+  }
+
+  onMounted(() => {
+    fetchProjectsAndClients()
+  })
+</script>
+
+<template>
+  <div class="h-full flex flex-col pt-5">
+    <div class="flex items-center justify-between px-2 py-4">
+      <div>
+        <h1 class="text-2xl font-bold">Projects Manager</h1>
+        <p class="text-gray-500 text-sm">Create and manage client projects.</p>
+      </div>
+
+      <UButton icon="i-lucide-folder-plus" label="New Project" @click="isCreateOpen = true" />
+    </div>
+
+    <UCard class="flex-1 mt-4" :ui="{ body: { padding: '' } }">
+      <UTable :columns="columns" :rows="projects" :loading="isLoading">
+        <template #client_id-data="{ row }">
+          <UBadge color="blue" variant="soft" v-if="row.clients?.name">
+            {{ row.clients.name }}
+          </UBadge>
+        </template>
+        <template #created_at-data="{ row }">
+          {{ new Date(row.created_at).toLocaleDateString() }}
+        </template>
+        <template #actions-data="{ row }">
+            <UButton size="xs" color="gray" variant="ghost" icon="i-lucide-arrow-right" :to="`/admin/projects/${row.id}`">Manage</UButton>
+        </template>
+      </UTable>
+    </UCard>
+
+    <UModal v-model="isCreateOpen">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+              Create New Project
+            </h3>
+            <UButton color="gray" variant="ghost" icon="i-lucide-x" class="-my-1" @click="isCreateOpen = false" />
+          </div>
+        </template>
+
+        <form @submit.prevent="createProject" class="space-y-4">
+          <UFormGroup label="Project Name">
+            <UInput v-model="form.name" required placeholder="e.g. Website Overhaul" />
+          </UFormGroup>
+
+          <UFormGroup label="Client Organization">
+            <USelect 
+                v-model="form.client_id"
+                required
+                :options="clients.map(c => ({ label: c.name, value: c.id }))" 
+                placeholder="Select a Client" 
+            />
+          </UFormGroup>
+          
+          <div class="pt-4 flex justify-end gap-2">
+            <UButton color="gray" variant="soft" @click="isCreateOpen = false">Cancel</UButton>
+            <UButton type="submit" :loading="isCreating">Create Project</UButton>
+          </div>
+        </form>
+      </UCard>
+    </UModal>
+  </div>
+</template>
