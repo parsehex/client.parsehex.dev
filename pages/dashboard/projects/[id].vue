@@ -26,8 +26,8 @@
 
   // Computed for sidebar action items
   const actionItems = computed(() => {
-    // Show items that are pending OR in follow_up status (since client still needs to approve eventually)
-    return updates.value.filter(u => u.requires_approval && (u.status === 'pending' || u.status === 'follow_up'))
+    // Show items that are pending action from the client
+    return updates.value.filter(u => u.requires_approval && u.status === 'pending')
   })
 
   const fetchProjectDetails = async () => {
@@ -91,9 +91,10 @@
     try {
         feedbackForm.isSubmitting = true
         
-        // 1. Update status on the project_update
+        // 1. Update status and official feedback
         const updateData: any = {
-            status: feedbackForm.actionType
+            status: feedbackForm.actionType,
+            client_feedback: feedbackForm.comment
         }
 
         if (feedbackForm.actionType === 'approved') {
@@ -108,23 +109,35 @@
 
         if (updateError) throw updateError
 
-        // 2. Insert comment if provided
-        if (feedbackForm.comment.trim()) {
-            const { error: commentError } = await supabase
-                .from('update_comments')
-                .insert({
-                    update_id: feedbackForm.activeUpdateId as string,
-                    author_id: user.value.id as string,
-                    content: feedbackForm.comment
-                })
-            
-            if (commentError) throw commentError
-        }
-        
-        // Reset and refresh
+        // 2. Clear and refresh
+        feedbackForm.comment = ''
         feedbackForm.activeUpdateId = null
         feedbackForm.actionType = null
+        await fetchProjectDetails()
+    } catch (e: any) {
+        errorHandler(new BaseError(e.code, e.message))
+    } finally {
+        feedbackForm.isSubmitting = false
+    }
+  }
+
+  const postComment = async (updateId: string) => {
+    if (!feedbackForm.comment.trim() || !user.value?.id) return
+
+    try {
+        feedbackForm.isSubmitting = true
+        const { error: commentError } = await supabase
+            .from('update_comments')
+            .insert({
+                update_id: updateId,
+                author_id: user.value.id as string,
+                content: feedbackForm.comment
+            })
+        
+        if (commentError) throw commentError
+        
         feedbackForm.comment = ''
+        feedbackForm.activeUpdateId = null
         await fetchProjectDetails()
     } catch (e: any) {
         errorHandler(new BaseError(e.code, e.message))
@@ -220,8 +233,8 @@
                                             </div>
                                         </div>
 
-                                        <!-- Approval/Follow-up Actions -->
-                                        <div v-if="update.requires_approval && (update.status === 'pending' || update.status === 'follow_up')" class="pt-2">
+                                        <!-- Approval Actions (Only when pending) -->
+                                        <div v-if="update.requires_approval && update.status === 'pending'" class="pt-2">
                                             <div class="flex gap-2 mb-3">
                                                 <UButton
                                                     size="xs"
@@ -274,6 +287,28 @@
                                                         Send
                                                     </UButton>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- General Reply (When not pending but requires approval) -->
+                                        <div v-else-if="update.requires_approval" class="pt-2">
+                                            <div class="flex gap-2">
+                                                <UInput 
+                                                    v-model="feedbackForm.comment" 
+                                                    placeholder="Write a reply..." 
+                                                    size="xs" 
+                                                    class="flex-1"
+                                                    @keyup.enter="postComment(update.id)"
+                                                />
+                                                <UButton 
+                                                    size="xs" 
+                                                    color="primary" 
+                                                    icon="i-lucide-send" 
+                                                    :loading="feedbackForm.isSubmitting" 
+                                                    @click="postComment(update.id)"
+                                                >
+                                                    Reply
+                                                </UButton>
                                             </div>
                                         </div>
                                     </div>
