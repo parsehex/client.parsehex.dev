@@ -162,6 +162,28 @@
     }
   }
 
+  const deleteNote = async (id: string) => {
+    if (!confirm('Delete this note permanently?')) return
+    try {
+      const { error } = await supabase.from('prospect_notes').delete().eq('id', id)
+      if (error) throw error
+      await fetchData()
+    } catch (e) {
+      errorHandler(e)
+    }
+  }
+
+  const deleteLink = async (id: string) => {
+    if (!confirm('Delete this link?')) return
+    try {
+      const { error } = await supabase.from('prospect_links').delete().eq('id', id)
+      if (error) throw error
+      await fetchData()
+    } catch (e) {
+      errorHandler(e)
+    }
+  }
+
   onMounted(() => fetchData())
 
   // Copy Pitch Link
@@ -216,6 +238,7 @@
                     @reply="id => replyingTo = id" 
                     @toggle-share="toggleShareable"
                     @edit-public="openPublicEdit"
+                  @delete="deleteNote"
                 />
                 
                 <!-- Simple recursion for 1-level for now, or use a component -->
@@ -227,6 +250,7 @@
                         @reply="id => replyingTo = id"
                         @toggle-share="toggleShareable"
                         @edit-public="openPublicEdit"
+                      @delete="deleteNote"
                     />
                 </div>
               </div>
@@ -289,7 +313,10 @@
                 <p class="text-sm font-medium">{{ link.label || link.url }}</p>
                 <p v-if="link.description" class="text-[10px] text-gray-500">{{ link.description }}</p>
               </div>
-              <UButton v-if="link.is_public" size="2xs" icon="i-lucide-eye" color="green" variant="ghost" class="opacity-0 group-hover:opacity-100" />
+              <div class="flex items-center gap-1">
+                <UButton v-if="link.is_public" size="2xs" icon="i-lucide-eye" color="green" variant="ghost" class="opacity-0 group-hover:opacity-100" />
+                <UButton size="2xs" icon="i-lucide-trash" color="red" variant="ghost" class="opacity-0 group-hover:opacity-100" @click="deleteLink(link.id)" />
+              </div>
             </div>
           </div>
         </UCard>

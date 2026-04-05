@@ -11,7 +11,7 @@
 
   const isCreateOpen = ref(false)
   const isCreating = ref(false)
-  
+
   const form = reactive({
     name: '',
     is_speculative: false,
@@ -32,7 +32,7 @@
     label: 'Prospects',
     icon: 'i-lucide-briefcase'
   }]
-  
+
   const selectedTab = ref(0)
 
   // Table Data
@@ -82,7 +82,7 @@
       .from('clients')
       .select('*')
       .order('created_at', { ascending: false })
-      
+
     if (data) clients.value = data
     isLoading.value = false
   }
@@ -90,7 +90,7 @@
   const createClient = async () => {
     try {
       isCreating.value = true
-      
+
       const { error } = await supabase
         .from('clients')
         .insert({
@@ -115,7 +115,7 @@
         source: '',
         deal_value: ''
       })
-      
+
       isCreateOpen.value = false
       await fetchClients()
     } catch (e: any) {
@@ -148,9 +148,12 @@
             <template #created_at-data="{ row }">
               {{ new Date(row.created_at).toLocaleDateString() }}
             </template>
-            <template #actions-data="{ row }">
-              <UButton color="gray" variant="ghost" icon="i-lucide-external-link" :to="`/admin/clients/${row.id}`" />
-            </template>
+              <template #actions-data="{ row }">
+                <div class="flex items-center gap-1">
+                  <UButton color="gray" variant="ghost" icon="i-lucide-external-link" :to="`/admin/clients/${row.id}`" />
+                  <UButton color="red" variant="ghost" size="xs" icon="i-lucide-trash" @click="deleteClient(row.id)" />
+                </div>
+              </template>
           </UTable>
         </UCard>
       </template>
@@ -161,9 +164,12 @@
             <template #created_at-data="{ row }">
               {{ new Date(row.created_at).toLocaleDateString() }}
             </template>
-            <template #actions-data="{ row }">
-              <UButton color="primary" variant="soft" icon="i-lucide-layout-dashboard" label="Workspace" :to="`/admin/prospects/${row.id}`" />
-            </template>
+              <template #actions-data="{ row }">
+                <div class="flex items-center gap-1">
+                  <UButton color="primary" variant="soft" size="xs" icon="i-lucide-layout-dashboard" :to="`/admin/prospects/${row.id}`" />
+                  <UButton color="red" variant="ghost" size="xs" icon="i-lucide-trash" @click="deleteClient(row.id)" />
+                </div>
+              </template>
           </UTable>
         </UCard>
       </template>
@@ -189,11 +195,11 @@
             <UFormGroup label="Organization / Name" class="col-span-2">
               <UInput v-model="form.name" required placeholder="Acme Corp" />
             </UFormGroup>
-            
+
             <UFormGroup label="Contact Name">
               <UInput v-model="form.contact_name" placeholder="John Doe" />
             </UFormGroup>
-            
+
             <UFormGroup label="Contact Email">
               <UInput v-model="form.contact_email" placeholder="john@example.com" />
             </UFormGroup>
@@ -210,7 +216,7 @@
               <UInput v-model="form.deal_value" placeholder="e.g. $5k project, $1k/mo retainer" />
             </UFormGroup>
           </div>
-          
+
           <div class="pt-4 flex justify-end gap-2">
             <UButton color="gray" variant="soft" @click="isCreateOpen = false">Cancel</UButton>
             <UButton type="submit" :loading="isCreating">Save {{ form.is_speculative ? 'Prospect' : 'Client' }}</UButton>

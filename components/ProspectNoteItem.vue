@@ -3,7 +3,7 @@
     note: any
   }>()
 
-  const emit = defineEmits(['reply', 'toggle-share', 'edit-public'])
+  const emit = defineEmits(['reply', 'toggle-share', 'edit-public', 'delete'])
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString([], { hour: '2-digit', minute: '2-digit' })
@@ -29,6 +29,7 @@
             @click="emit('toggle-share', note)" 
         />
         <UButton size="2xs" icon="i-lucide-edit-3" variant="ghost" color="gray" @click="emit('edit-public', note)" />
+        <UButton size="2xs" icon="i-lucide-trash" variant="ghost" color="red" @click="emit('delete', note.id)" />
       </div>
     </div>
 

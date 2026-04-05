@@ -122,10 +122,10 @@
           {{ new Date(row.created_at).toLocaleDateString() }}
         </template>
         <template #actions-data="{ row }">
-          <div class="flex items-center gap-1">
-            <UButton size="xs" color="gray" variant="ghost" icon="i-lucide-arrow-right" :to="`/admin/projects/${row.id}`">Manage</UButton>
-            <UButton size="xs" color="red" variant="ghost" icon="i-lucide-trash" @click="deleteProject(row.id)" />
-          </div>
+            <div class="flex items-center gap-1">
+              <UButton size="xs" color="gray" variant="ghost" icon="i-lucide-arrow-right" :to="`/admin/projects/${row.id}`">Manage</UButton>
+              <UButton size="xs" color="red" variant="ghost" icon="i-lucide-trash" @click="deleteProject(row.id)" />
+            </div>
         </template>
       </UTable>
     </UCard>
