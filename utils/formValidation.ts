@@ -35,3 +35,19 @@ export const resetPasswordValidation = object({
 export type SchemaResetPasswordValidation = InferType<
 	typeof resetPasswordValidation
 >
+
+export const inquiryValidation = object({
+	name: string()
+		.min(2, 'Must be at least 2 characters')
+		.max(120, 'Must be 120 characters or less')
+		.required('Field is required'),
+	email: string().email('Invalid email').required('Field is required'),
+	company: string().max(120, 'Must be 120 characters or less').nullable(),
+	website: string().url('Must be a valid URL').nullable(),
+	message: string()
+		.min(20, 'Must be at least 20 characters')
+		.max(4000, 'Must be 4000 characters or less')
+		.required('Field is required'),
+})
+
+export type SchemaInquiryValidation = InferType<typeof inquiryValidation>

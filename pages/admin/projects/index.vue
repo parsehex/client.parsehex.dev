@@ -11,7 +11,7 @@
 
   const isCreateOpen = ref(false)
   const isCreating = ref(false)
-  
+
   const form = reactive({
     name: '',
     client_id: undefined
@@ -38,13 +38,13 @@
 
   const fetchProjectsAndClients = async () => {
     isLoading.value = true
-    
+
     // We fetch projects and join with clients to get the client name
     const { data: projectData, error: projectError } = await supabase
       .from('projects')
       .select('*, clients(name)')
       .order('created_at', { ascending: false })
-      
+
     if (projectData) projects.value = projectData
 
     const { data: clientData } = await supabase
@@ -59,7 +59,7 @@
   const createProject = async () => {
     try {
       isCreating.value = true
-      
+
       if (!form.client_id) {
           throw new Error('Please select a client.')
       }
@@ -147,14 +147,14 @@
           </UFormGroup>
 
           <UFormGroup label="Client Organization">
-            <USelect 
+            <USelect
                 v-model="form.client_id"
                 required
-                :options="clients.map(c => ({ label: c.name, value: c.id }))" 
-                placeholder="Select a Client" 
+                :options="clients.map(c => ({ label: c.name, value: c.id }))"
+                placeholder="Select a Client"
             />
           </UFormGroup>
-          
+
           <div class="pt-4 flex justify-end gap-2">
             <UButton color="gray" variant="soft" @click="isCreateOpen = false">Cancel</UButton>
             <UButton type="submit" :loading="isCreating">Create Project</UButton>

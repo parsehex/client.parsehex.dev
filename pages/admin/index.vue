@@ -14,9 +14,23 @@
   const supabase = useSupabaseClient<Database>()
   const { errorHandler } = useErrorHandler()
 
+  interface InquiryItem {
+    id: string
+    name: string
+    email: string
+    company: string | null
+    website: string | null
+    message: string
+    source_path: string | null
+    status: 'new' | 'reviewed' | 'archived'
+    created_at: string
+  }
+
   const pendingApprovals = ref<any[]>([])
   const needsAttention = ref<any[]>([])
   const recentActivity = ref<any[]>([])
+  const inquiries = ref<InquiryItem[]>([])
+  const inquiryUpdating = ref<string | null>(null)
   const isLoading = ref(true)
 
   const fetchData = async () => {
@@ -61,6 +75,10 @@
       if (activityError) throw activityError
       recentActivity.value = activityData || []
 
+    // 4. Fetch newest public inquiries for quick review
+    const inquiryResponse = await $fetch<{ inquiries: InquiryItem[] }>('/api/admin/inquiries?status=new&limit=20')
+    inquiries.value = inquiryResponse.inquiries || []
+
     } catch (e: any) {
         errorHandler(new BaseError(e.code, e.message))
     } finally {
@@ -90,6 +108,28 @@
     return item.client_feedback
   }
 
+  const markInquiryReviewed = async (inquiryId: string) => {
+    if (inquiryUpdating.value) {
+      return
+    }
+
+    inquiryUpdating.value = inquiryId
+    try {
+      await $fetch(`/api/admin/inquiries/${inquiryId}`, {
+        method: 'PATCH',
+        body: {
+          status: 'reviewed',
+        },
+      })
+
+      inquiries.value = inquiries.value.filter((item) => item.id !== inquiryId)
+    } catch (e: any) {
+      errorHandler(new BaseError(e?.statusCode || 500, e?.statusMessage || e?.message || 'Unable to update inquiry'))
+    } finally {
+      inquiryUpdating.value = null
+    }
+  }
+
 
 
   onMounted(() => {
@@ -112,6 +152,65 @@
 
     <!-- Live Activity Sections -->
     <div v-if="!isLoading" class="mt-8 space-y-8">
+
+      <!-- Public Inquiries -->
+      <section v-if="inquiries.length > 0" class="space-y-4">
+        <h2 class="text-xl font-bold flex items-center gap-2">
+          <UIcon name="i-lucide-inbox" class="w-5 h-5 text-emerald-500" />
+          New Inquiries
+          <UBadge color="emerald" variant="solid" size="xs" class="ml-2">{{ inquiries.length }}</UBadge>
+        </h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <UCard
+            v-for="inquiry in inquiries"
+            :key="inquiry.id"
+            class="border-emerald-100 dark:border-emerald-900"
+            :ui="{ body: { padding: 'p-4' } }"
+          >
+            <div class="space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-bold text-gray-900 dark:text-white">{{ inquiry.name }}</p>
+                  <p class="text-xs text-gray-500">{{ inquiry.email }}</p>
+                </div>
+                <p class="text-[11px] text-gray-400">{{ new Date(inquiry.created_at).toLocaleString() }}</p>
+              </div>
+
+              <div class="text-xs text-gray-500 space-y-1">
+                <p v-if="inquiry.company">Company: {{ inquiry.company }}</p>
+                <p v-if="inquiry.website">Website: {{ inquiry.website }}</p>
+                <p v-if="inquiry.source_path">Source: {{ inquiry.source_path }}</p>
+              </div>
+
+              <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ inquiry.message }}</p>
+
+              <div class="flex items-center justify-between gap-2">
+                <UButton
+                  size="xs"
+                  color="gray"
+                  variant="soft"
+                  icon="i-lucide-mail"
+                  :to="`mailto:${inquiry.email}`"
+                >
+                  Reply
+                </UButton>
+
+                <UButton
+                  size="xs"
+                  color="emerald"
+                  icon="i-lucide-check"
+                  :loading="inquiryUpdating === inquiry.id"
+                  :disabled="inquiryUpdating === inquiry.id"
+                  @click="markInquiryReviewed(inquiry.id)"
+                >
+                  Mark reviewed
+                </UButton>
+              </div>
+            </div>
+          </UCard>
+        </div>
+      </section>
 
       <!-- 0. Needs Attention (Follow-ups) -->
       <section v-if="needsAttention.length > 0" class="space-y-4">

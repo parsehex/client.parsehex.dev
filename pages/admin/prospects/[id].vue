@@ -46,7 +46,7 @@
       prospect.value = pRes.data
       notes.value = nRes.data || []
       links.value = lRes.data || []
-      
+
       // Calculate basic stats
       const views = sRes.data || []
       stats.value = {
@@ -126,7 +126,7 @@
   // Link Actions
   const isAddLinkOpen = ref(false)
   const linkForm = reactive({ url: '', label: '', description: '' })
-  
+
   const addLink = async () => {
     try {
       const { error } = await supabase.from('prospect_links').insert({
@@ -229,23 +229,23 @@
             <UIcon name="i-lucide-brain" class="w-12 h-12 mx-auto mb-2" />
             <p>Start iterating on your vision here.</p>
           </div>
-          
+
           <div v-else class="space-y-4">
               <!-- Root notes -->
               <div v-for="note in noteTree" :key="note.id" class="space-y-3">
-                <ProspectNoteItem 
-                    :note="note" 
-                    @reply="id => replyingTo = id" 
+                <ProspectNoteItem
+                    :note="note"
+                    @reply="id => replyingTo = id"
                     @toggle-share="toggleShareable"
                     @edit-public="openPublicEdit"
                   @delete="deleteNote"
                 />
-                
+
                 <!-- Simple recursion for 1-level for now, or use a component -->
                 <div v-if="note.children.length > 0" class="ml-8 border-l-2 border-gray-200 dark:border-gray-800 pl-4 space-y-3">
-                    <ProspectNoteItem 
-                        v-for="child in note.children" 
-                        :key="child.id" 
+                    <ProspectNoteItem
+                        v-for="child in note.children"
+                        :key="child.id"
                         :note="child"
                         @reply="id => replyingTo = id"
                         @toggle-share="toggleShareable"
@@ -303,7 +303,7 @@
                <UButton size="2xs" icon="i-lucide-plus" variant="ghost" @click="isAddLinkOpen = true" />
             </div>
           </template>
-          
+
           <div v-if="links.length === 0" class="text-center py-4 opacity-50 text-xs">
             No public links added yet.
           </div>
@@ -334,7 +334,7 @@
               <p class="text-[10px] uppercase text-gray-500">Unique Viewers</p>
             </div>
           </div>
-          
+
           <div v-if="stats.recent.length > 0" class="space-y-2">
             <p class="text-[10px] font-semibold text-gray-400 uppercase">Recent Views</p>
             <div v-for="view in stats.recent" :key="view.id" class="text-[10px] flex justify-between py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
@@ -383,7 +383,7 @@
         </UCard>
     </UModal>
   </div>
-  
+
   <div v-else-if="isLoading" class="h-full flex items-center justify-center">
     <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-gray-500" />
   </div>

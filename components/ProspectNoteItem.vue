@@ -18,15 +18,15 @@
         <UBadge v-if="note.tag" color="gray" variant="soft" size="xs" class="uppercase text-[9px]">{{ note.tag }}</UBadge>
         <span class="text-[10px] text-gray-400 font-medium">{{ formatDate(note.created_at) }}</span>
       </div>
-      
+
       <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <UButton size="2xs" icon="i-lucide-reply" variant="ghost" color="gray" @click="emit('reply', note.id)" />
-        <UButton 
-            size="2xs" 
-            :icon="note.is_shareable ? 'i-lucide-eye' : 'i-lucide-eye-off'" 
-            variant="ghost" 
-            :color="note.is_shareable ? 'primary' : 'gray'" 
-            @click="emit('toggle-share', note)" 
+        <UButton
+            size="2xs"
+            :icon="note.is_shareable ? 'i-lucide-eye' : 'i-lucide-eye-off'"
+            variant="ghost"
+            :color="note.is_shareable ? 'primary' : 'gray'"
+            @click="emit('toggle-share', note)"
         />
         <UButton size="2xs" icon="i-lucide-edit-3" variant="ghost" color="gray" @click="emit('edit-public', note)" />
         <UButton size="2xs" icon="i-lucide-trash" variant="ghost" color="red" @click="emit('delete', note.id)" />

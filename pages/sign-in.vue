@@ -1,5 +1,10 @@
 <script setup lang="ts">
-  import { signInValidation, type SchemaSignInValidation } from '~/utils/formValidation'
+  import {
+    inquiryValidation,
+    signInValidation,
+    type SchemaInquiryValidation,
+    type SchemaSignInValidation,
+  } from '~/utils/formValidation'
   import { BaseError, useErrorHandler } from '~/composables/use-error-handler'
   import type { FormSubmitEvent } from '#ui/types'
 
@@ -14,12 +19,96 @@
   const { auth } = useSupabaseClient()
   const { errorHandler } = useErrorHandler()
   const runtimeConfig = useRuntimeConfig()
+  const route = useRoute()
 
   const form = reactive({
     email: undefined,
     password: undefined
   })
   const isLoading = ref(false)
+
+  const inquiryForm = reactive({
+    name: '',
+    email: '',
+    company: '',
+    website: '',
+    message: ''
+  })
+  const isInquiryLoading = ref(false)
+  const inquirySuccessMessage = ref('')
+  const inquiryErrorMessage = ref('')
+  const captchaToken = ref('')
+  const captchaContainer = ref<HTMLElement | null>(null)
+  const captchaWidgetId = ref<string | number | null>(null)
+  const isCaptchaReady = ref(false)
+
+  useHead({
+    script: [{ src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', defer: true, async: true }]
+  })
+
+  const resetInquiryForm = () => {
+    inquiryForm.name = ''
+    inquiryForm.email = ''
+    inquiryForm.company = ''
+    inquiryForm.website = ''
+    inquiryForm.message = ''
+    captchaToken.value = ''
+
+    if (window.turnstile && captchaWidgetId.value !== null) {
+      window.turnstile.reset(captchaWidgetId.value)
+    }
+  }
+
+  const initializeCaptcha = () => {
+    if (!runtimeConfig.public.TURNSTILE_SITE_KEY || !captchaContainer.value) {
+      return
+    }
+
+    if (!window.turnstile || captchaWidgetId.value !== null) {
+      return
+    }
+
+    captchaWidgetId.value = window.turnstile.render(captchaContainer.value, {
+      sitekey: runtimeConfig.public.TURNSTILE_SITE_KEY,
+      callback: (token: string) => {
+        captchaToken.value = token
+      },
+      'expired-callback': () => {
+        captchaToken.value = ''
+      },
+      'error-callback': () => {
+        captchaToken.value = ''
+      },
+    })
+
+    isCaptchaReady.value = true
+  }
+
+  const waitForCaptchaScript = () => {
+    if (!runtimeConfig.public.TURNSTILE_SITE_KEY) {
+      return
+    }
+
+    const attempt = () => {
+      if (!captchaContainer.value) {
+        setTimeout(attempt, 100)
+        return
+      }
+
+      if (window.turnstile) {
+        initializeCaptcha()
+        return
+      }
+
+      setTimeout(attempt, 150)
+    }
+
+    attempt()
+  }
+
+  onMounted(() => {
+    waitForCaptchaScript()
+  })
 
   /**
    * Sign in with credential.
@@ -79,57 +168,152 @@
       errorHandler(error as BaseError)
     }
   }
+
+  const submitInquiry = async (event: FormSubmitEvent<SchemaInquiryValidation>) => {
+    try {
+      inquiryErrorMessage.value = ''
+      inquirySuccessMessage.value = ''
+
+      if (!runtimeConfig.public.TURNSTILE_SITE_KEY) {
+        throw new BaseError(503, 'Turnstile is not configured. Please contact support directly by email.')
+      }
+
+      if (!captchaToken.value) {
+        throw new BaseError(400, 'Please complete captcha verification before submitting your inquiry.')
+      }
+
+      isInquiryLoading.value = true
+
+      await $fetch('/api/inquiries', {
+        method: 'POST',
+        body: {
+          name: event.data.name,
+          email: event.data.email,
+          company: event.data.company || null,
+          website: event.data.website || null,
+          message: event.data.message,
+          captchaToken: captchaToken.value,
+          sourcePath: route.fullPath,
+        },
+      })
+
+      inquirySuccessMessage.value = 'Thanks, your inquiry was sent. I will follow up by email soon.'
+      resetInquiryForm()
+    } catch (error: any) {
+      inquiryErrorMessage.value = error?.data?.statusMessage || error?.message || 'Unable to submit your inquiry right now.'
+    } finally {
+      isInquiryLoading.value = false
+    }
+  }
+</script>
+
+<script lang="ts">
+  declare global {
+    interface Window {
+      turnstile?: {
+        render: (container: string | HTMLElement, options: Record<string, unknown>) => string | number
+        reset: (widgetId?: string | number) => void
+      }
+    }
+  }
+
+  export {}
 </script>
 
 <template>
-  <div>
-    <div class="container mx-auto">
-      <div class="flex h-[100vh] w-full justify-center items-center">
-        <div class="w-10/12 md:w-8/12 lg:w-4/12 xl:w-3/12">
-          <UCard>
-            <UForm :schema="signInValidation" :state="form" class="space-y-2" @submit="signInWithCredential">
-              <div class="space-y-4">
-                <div class="flex justify-center">
-                  <img src="/favicon.png" class="h-[80px] rounded-lg">
-                </div>
+  <div class="container mx-auto px-4 py-10 min-h-screen flex items-center">
+    <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-3">
+            <img src="/favicon.png" class="h-10 w-10 rounded-lg" alt="parsehex logo">
+            <div>
+              <p class="text-lg font-bold">parsehex Client Portal</p>
+              <p class="text-xs text-gray-500">Sign in for existing clients and team members</p>
+            </div>
+          </div>
+        </template>
 
-                <p class="text-lg font-bold text-center">parsehex Client Portal</p>
+        <UForm :schema="signInValidation" :state="form" class="space-y-4" @submit="signInWithCredential">
+          <UFormGroup label="Email" name="email">
+            <UInput v-model="form.email" autocomplete="email" />
+          </UFormGroup>
 
-                <UFormGroup label="Email" name="email">
-                  <UInput v-model="form.email" />
-                </UFormGroup>
+          <UFormGroup label="Password" name="password">
+            <UInput v-model="form.password" type="password" autocomplete="current-password" />
+          </UFormGroup>
 
-                <UFormGroup label="Password" name="password">
-                  <UInput v-model="form.password" type="password" />
-                </UFormGroup>
-                <!-- <div class="flex items-center gap-1 justify-start mt-3 text-xs">
-                  <p class="opacity-50">Forgot your password?</p>
-                  <NuxtLink to="/forgot-password" class="underline">click here</NuxtLink>
-                </div> -->
+          <UButton
+            :loading="isLoading"
+            :disabled="isLoading"
+            type="submit"
+            label="Login"
+            color="gray"
+            block
+          />
+        </UForm>
+      </UCard>
 
-                <UButton
-                :loading="isLoading"
-                :disabled="isLoading"
-                type="submit" label="Login" color="gray" block />
-              </div>
-              <!-- <UDivider label="or" color="gray" orientation="vertical" /> -->
+      <UCard>
+        <template #header>
+          <div>
+            <p class="text-lg font-bold">Need help or want to work together?</p>
+            <p class="text-xs text-gray-500">Send an inquiry directly without an account.</p>
+          </div>
+        </template>
 
-              <!-- <div class="space-y-4 flex flex-col justify-center">
-                <UButton
-                @click="signInWithProvider('GITHUB')"
-                :disabled="isLoading"
-                color="black" label="Continue with GitHub"
-                icon="i-lucide-github" block />
-              </div> -->
-            </UForm>
-          </UCard>
+        <UForm :schema="inquiryValidation" :state="inquiryForm" class="space-y-4" @submit="submitInquiry">
+          <UFormGroup label="Name" name="name">
+            <UInput v-model="inquiryForm.name" placeholder="Your full name" />
+          </UFormGroup>
 
-          <!-- <div class="flex items-center gap-2 justify-center mt-3">
-            <p class="opacity-50">Don't have an account?</p>
-            <NuxtLink to="/sign-up" class="underline">Sign up</NuxtLink>
-          </div> -->
-        </div>
-      </div>
+          <UFormGroup label="Email" name="email">
+            <UInput v-model="inquiryForm.email" placeholder="you@example.com" autocomplete="email" />
+          </UFormGroup>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UFormGroup label="Company (optional)" name="company">
+              <UInput v-model="inquiryForm.company" placeholder="Acme Co" />
+            </UFormGroup>
+
+            <UFormGroup label="Website (optional)" name="website">
+              <UInput v-model="inquiryForm.website" placeholder="https://example.com" />
+            </UFormGroup>
+          </div>
+
+          <UFormGroup label="How can I help?" name="message">
+            <UTextarea v-model="inquiryForm.message" :rows="5" placeholder="Share a short overview of your project, goals, or timeline." />
+          </UFormGroup>
+
+          <div>
+            <div v-if="runtimeConfig.public.TURNSTILE_SITE_KEY" ref="captchaContainer" class="min-h-[65px]" />
+            <p v-else class="text-xs text-red-500">Captcha is not configured yet. Set TURNSTILE_SITE_KEY to enable public inquiries.</p>
+          </div>
+
+          <UAlert
+            v-if="inquirySuccessMessage"
+            color="green"
+            variant="soft"
+            :title="inquirySuccessMessage"
+          />
+
+          <UAlert
+            v-if="inquiryErrorMessage"
+            color="red"
+            variant="soft"
+            :title="inquiryErrorMessage"
+          />
+
+          <UButton
+            :loading="isInquiryLoading"
+            :disabled="isInquiryLoading || !runtimeConfig.public.TURNSTILE_SITE_KEY || !isCaptchaReady"
+            type="submit"
+            label="Send inquiry"
+            color="black"
+            block
+          />
+        </UForm>
+      </UCard>
     </div>
   </div>
 </template>

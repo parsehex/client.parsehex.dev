@@ -22,7 +22,7 @@
 
   const language = ref('html')
   const codeEditor = ref('')
-  
+
   codeEditor.value = props?.code ?? ''
 
   let editorInit: any = null

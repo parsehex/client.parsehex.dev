@@ -41,21 +41,142 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
+          contact_email: string | null
+          contact_name: string | null
+          converted_at: string | null
           created_at: string | null
+          deal_value: string | null
           id: string
+          is_speculative: boolean | null
           name: string
+          notes: string | null
+          share_token: string | null
+          source: string | null
+          website: string | null
         }
         Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          converted_at?: string | null
           created_at?: string | null
+          deal_value?: string | null
           id?: string
+          is_speculative?: boolean | null
           name: string
+          notes?: string | null
+          share_token?: string | null
+          source?: string | null
+          website?: string | null
         }
         Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          converted_at?: string | null
           created_at?: string | null
+          deal_value?: string | null
           id?: string
+          is_speculative?: boolean | null
           name?: string
+          notes?: string | null
+          share_token?: string | null
+          source?: string | null
+          website?: string | null
         }
         Relationships: []
+      }
+      inquiries: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          message: string
+          name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_path: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          website: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          message: string
+          name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_path?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          website?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          message?: string
+          name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_path?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pitch_views: {
+        Row: {
+          client_id: string
+          id: string
+          ip_hash: string | null
+          referrer: string | null
+          user_agent: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          client_id: string
+          id?: string
+          ip_hash?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          id?: string
+          ip_hash?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_views_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_updates: {
         Row: {
@@ -156,6 +277,101 @@ export type Database = {
           },
         ]
       }
+      prospect_links: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          label: string | null
+          sort_order: number | null
+          url: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          sort_order?: number | null
+          url: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          sort_order?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prospect_notes: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_shareable: boolean | null
+          parent_id: string | null
+          public_content: string | null
+          sort_order: number | null
+          tag: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_shareable?: boolean | null
+          parent_id?: string | null
+          public_content?: string | null
+          sort_order?: number | null
+          tag?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_shareable?: boolean | null
+          parent_id?: string | null
+          public_content?: string | null
+          sort_order?: number | null
+          tag?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prospect_notes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "prospect_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       update_comments: {
         Row: {
           action_type: string | null
@@ -241,6 +457,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_client_id_by_token: { Args: { token: string }; Returns: string }
       get_user_client: { Args: never; Returns: string }
       is_system_admin: { Args: never; Returns: boolean }
     }

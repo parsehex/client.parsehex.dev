@@ -27,8 +27,13 @@ export default defineNuxtConfig({
 		redirect: false,
 	},
 	runtimeConfig: {
+		TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+		RESEND_API_KEY: process.env.RESEND_API_KEY,
+		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+		INQUIRY_NOTIFICATION_EMAIL: process.env.INQUIRY_NOTIFICATION_EMAIL,
 		public: {
 			APP_URL: process.env.APP_URL,
+			TURNSTILE_SITE_KEY: process.env.TURNSTILE_SITE_KEY,
 		},
 	},
 	modules: [
